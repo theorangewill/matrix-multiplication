@@ -154,13 +154,12 @@ int main(void)
     int Y[tamanho][tamanho];
     int D[tamanho][tamanho];
     int temp[tamanho];
-    int C[n/p][n];
+    int C[tamanho][n];
     int RESPOSTA[n][n];
     int Bt[n][n];
     int resultado;
     int linha = id/raiz;
     int coluna = id%raiz;
-    printf("copia %ld X %ld Y %ld D %ld temp %ld C %ld Bt %ld\n",sizeof(copia),sizeof(X),sizeof(Y),sizeof(D),sizeof(temp),sizeof(C),sizeof(Bt) );
 
     //Transpor a matriz para se adequar a alocacao da memoria de uma matriz e facilitar a transmissão
     for(int i=0; i<n; i++){
@@ -216,25 +215,13 @@ int main(void)
     }
 
     for(int vezes=raiz-1; vezes>0; vezes--){
-      for(int i=0; i<tamanho; i++){
-        for(int j=0; j<tamanho; j++){
-          printf("%d ", C[i][coluna*tamanho+j]);
-        }
-        printf("\n");
-      }
+
           for(int i=0; i<tamanho; i++){
             for(int j=0; j<tamanho; j++){
               D[i][j] = Y[i][j];
             }
           }
 
-      printf("\n");
-      for(int i=0; i<tamanho; i++){
-        for(int j=0; j<tamanho; j++){
-          printf("%d ", C[i][coluna*tamanho+j]);
-        }
-        printf("\n");
-      }
           for(int i=0, tag=0; i<tamanho; i++, tag++)
             MPI_Send(&D[i], tamanho, MPI_INT, ((unsigned int) (linha+1)%raiz)*raiz+coluna, tag, MPI_COMM_WORLD);
           for(int i=0, tag=0; i<tamanho; i++, tag++)
