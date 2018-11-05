@@ -184,6 +184,7 @@ int main(void)
       }
     }
 
+    if(p > 1)
     for(int proc=1; proc<p; proc++)
       for(int i=0, tag=0; i<tamanho; i++, tag++)
         MPI_Recv(&RESPOSTA[proc*n/p+i], n, MPI_INT, proc, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
