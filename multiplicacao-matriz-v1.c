@@ -96,7 +96,7 @@ int main(int argc, char **argv)
       MPI_Send(&C[i], n, MPI_INT, 0, tag, MPI_COMM_WORLD);
     timeEnd = MPI_Wtime();
     
-    printf("%lf %lf, %d\n", timeInit, timeEnd, id);
+    //printf("%lf %lf, %d\n", timeInit, timeEnd, id);
   }
   else{
 
