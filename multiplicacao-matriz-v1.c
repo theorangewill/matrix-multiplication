@@ -8,17 +8,25 @@ mpiexec -np 2 ./programa
 
 
 */
-int main(void)
+
+
+int main(int argc, char **argv)
 {
   int p = 2;
   int id;
-  int n = 12;
+  int n; 
+  double timeInit; 
+  double timeEnd; 
+  double totalInit; 
+  double totalEnd;
+  double time;
+ 
 
   MPI_Init(NULL, NULL);
   MPI_Comm_size(MPI_COMM_WORLD, &p);
   MPI_Comm_rank(MPI_COMM_WORLD, &id);
 
-  if(id != 0){
+    if(id != 0){
     int X[n/p][n];
     int Y[n/p][n];
     int copia[n/p][n];
@@ -26,6 +34,7 @@ int main(void)
     int tamanho = n/p;
     int resultado;
 
+    timeInit = MPI_Wtime();
     //Recebe os blocos do processador 0, com Y=B't X=A'
     for(int i=0, tag=0; i<tamanho; i++, tag++)
       MPI_Recv(&X[i], n, MPI_INT, 0, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -85,12 +94,60 @@ int main(void)
 
     for(int i=0, tag=0; i<tamanho; i++, tag++)
       MPI_Send(&C[i], n, MPI_INT, 0, tag, MPI_COMM_WORLD);
+    timeEnd = MPI_Wtime();
+    
+    printf("%lf %lf, %d\n", timeInit, timeEnd, id);
   }
   else{
-    //int A[4][4] = {{1,2,3,4},{1,2,3,4},{1,2,3,4},{1,2,3,4}};
-    //int B[4][4] = {{1,2,3,4},{1,2,3,4},{1,2,3,4},{1,2,3,4}};
-    int A[12][12] = {{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1},{9,10,11,12,6,1,1,2,3,4,6,1},{13,14,15,16,6,1,1,2,3,4,6,1},{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1},{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1},{9,10,11,12,6,1,1,2,3,4,6,1},{13,14,15,16,6,1,1,2,3,4,6,1},{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1}};
-    int B[12][12] = {{17,18,19,20,1,3,17,18,19,20,1,3},{21,22,23,24,1,3,17,18,19,20,1,3},{25,26,27,28,1,3,17,18,19,20,1,3},{29,30,31,32,1,3,17,18,19,20,1,3},{1,2,3,4,6,1,17,18,19,20,1,3},{5,6,7,8,6,1,17,18,19,20,1,3},{17,18,19,20,1,3,17,18,19,20,1,3},{21,22,23,24,1,3,17,18,19,20,1,3},{25,26,27,28,1,3,17,18,19,20,1,3},{29,30,31,32,1,3,17,18,19,20,1,3},{1,2,3,4,6,1,17,18,19,20,1,3},{5,6,7,8,6,1,17,18,19,20,1,3}};
+
+    FILE *file;
+    // open file
+    file = fopen(argv[1], "r");
+
+    if(!file) {
+     printf("ERROR! Couldn't open file.\n");
+     return 0;
+    }
+
+    if(!fscanf(file, "%d\n", &n)) return 0;
+
+
+    int A[n][n], B[n][n];
+    
+
+    for(int i=0; i<n; i++){
+      for(int j=0; j<n; j++){  
+        fscanf(file,"%d", &A[i][j]);
+      }
+      fscanf(file, "\n");
+    }
+
+
+    for(int i=0; i<n; i++){
+      for(int j=0; j<n; j++){  
+        fscanf(file,"%d", &B[i][j]);
+      }
+      fscanf(file, "\n");
+    }
+/*
+    for(int i=0; i<n; i++){
+      for(int j=0; j<n; j++){
+        printf("%d ", A[i][j]);
+      }
+	printf("\n");
+    }
+
+    for(int i=0; i<n; i++){
+      for(int j=0; j<n; j++){
+        printf("%d ", B[i][j]);
+      }
+	printf("\n");
+    }*/
+
+    
+  fclose(file);
+    /*int A[12][12] = {{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1},{9,10,11,12,6,1,1,2,3,4,6,1},{13,14,15,16,6,1,1,2,3,4,6,1},{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1},{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1},{9,10,11,12,6,1,1,2,3,4,6,1},{13,14,15,16,6,1,1,2,3,4,6,1},{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1}};
+    int B[12][12] = {{17,18,19,20,1,3,17,18,19,20,1,3},{21,22,23,24,1,3,17,18,19,20,1,3},{25,26,27,28,1,3,17,18,19,20,1,3},{29,30,31,32,1,3,17,18,19,20,1,3},{1,2,3,4,6,1,17,18,19,20,1,3},{5,6,7,8,6,1,17,18,19,20,1,3},{17,18,19,20,1,3,17,18,19,20,1,3},{21,22,23,24,1,3,17,18,19,20,1,3},{25,26,27,28,1,3,17,18,19,20,1,3},{29,30,31,32,1,3,17,18,19,20,1,3},{1,2,3,4,6,1,17,18,19,20,1,3},{5,6,7,8,6,1,17,18,19,20,1,3}};*/
     int tamanho = n/p;
     int X[n/p][n];
     int Y[n/p][n];
@@ -106,6 +163,8 @@ int main(void)
         Bt[j][i] = B[i][j];
       }
     }
+ 
+    timeInit = MPI_Wtime();
     //printf("tamanho=%d p=%d n=%d n/p=%d\n", tamanho,p,n,n/p);
     //Enviar as linhas de A para os processadores
     for(int proc=1; proc<p; proc++)
@@ -189,12 +248,25 @@ int main(void)
       for(int i=0, tag=0; i<tamanho; i++, tag++)
         MPI_Recv(&RESPOSTA[proc*n/p+i], n, MPI_INT, proc, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
+    timeEnd = MPI_Wtime();
 
-    for(int i=0; i<n; i++){
+    printf("%lf %lf, %d\n", timeInit, timeEnd, id);
+
+
+    /*for(int i=0; i<n; i++){
       for(int j=0; j<n; j++)  printf("%d\t", RESPOSTA[i][j]);
       printf("\n");
-    }
+    }*/
   }
+
+  MPI_Reduce(&timeInit, &totalInit, 1, MPI_DOUBLE, MPI_MIN,  0, MPI_COMM_WORLD);
+  MPI_Reduce(&timeEnd, &totalEnd, 1, MPI_DOUBLE, MPI_MAX,  0, MPI_COMM_WORLD);
+
+  time = totalEnd - totalInit;
+  if (id == 0)
+  printf("REDUCE = %lf\n", time);
+
   MPI_Finalize();
+
   return 0;
 }
