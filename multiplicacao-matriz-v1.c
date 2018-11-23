@@ -25,23 +25,27 @@ int main(int argc, char **argv)
   MPI_Init(NULL, NULL);
   MPI_Comm_size(MPI_COMM_WORLD, &p);
   MPI_Comm_rank(MPI_COMM_WORLD, &id);
+  if(id != 0){
+    MPI_Recv(&n, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-    if(id != 0){
     int X[n/p][n];
     int Y[n/p][n];
     int copia[n/p][n];
     int C[n/p][n];
-    int tamanho = n/p;
+    int tamanho = (int) n/p;
     int resultado;
+
 
     timeInit = MPI_Wtime();
     //Recebe os blocos do processador 0, com Y=B't X=A'
+
     for(int i=0, tag=0; i<tamanho; i++, tag++)
       MPI_Recv(&X[i], n, MPI_INT, 0, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
     for(int i=0, tag=0; i<tamanho; i++, tag++)
       MPI_Recv(&Y[i], n, MPI_INT, 0, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-    for(int i=0; i<n/p; i++){
+    for(int i=0; i<tamanho; i++){
       for(int tam=0; tam<tamanho; tam++){
         resultado = 0;
         for(int j=0; j<n; j++){
@@ -51,6 +55,7 @@ int main(int argc, char **argv)
         C[i][id*n/p+tam] = resultado;
       }
     }
+
 
     for(int vezes=p-1; vezes>0; vezes--){
       /*for(int i=0; i<n/p; i++){
@@ -92,10 +97,12 @@ int main(int argc, char **argv)
     printf("\n");
 */
 
+
     for(int i=0, tag=0; i<tamanho; i++, tag++)
       MPI_Send(&C[i], n, MPI_INT, 0, tag, MPI_COMM_WORLD);
     timeEnd = MPI_Wtime();
     
+
     //printf("%lf %lf, %d\n", timeInit, timeEnd, id);
   }
   else{
@@ -148,7 +155,7 @@ int main(int argc, char **argv)
   fclose(file);
     /*int A[12][12] = {{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1},{9,10,11,12,6,1,1,2,3,4,6,1},{13,14,15,16,6,1,1,2,3,4,6,1},{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1},{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1},{9,10,11,12,6,1,1,2,3,4,6,1},{13,14,15,16,6,1,1,2,3,4,6,1},{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1}};
     int B[12][12] = {{17,18,19,20,1,3,17,18,19,20,1,3},{21,22,23,24,1,3,17,18,19,20,1,3},{25,26,27,28,1,3,17,18,19,20,1,3},{29,30,31,32,1,3,17,18,19,20,1,3},{1,2,3,4,6,1,17,18,19,20,1,3},{5,6,7,8,6,1,17,18,19,20,1,3},{17,18,19,20,1,3,17,18,19,20,1,3},{21,22,23,24,1,3,17,18,19,20,1,3},{25,26,27,28,1,3,17,18,19,20,1,3},{29,30,31,32,1,3,17,18,19,20,1,3},{1,2,3,4,6,1,17,18,19,20,1,3},{5,6,7,8,6,1,17,18,19,20,1,3}};*/
-    int tamanho = n/p;
+    int tamanho = (int) n/p;
     int X[n/p][n];
     int Y[n/p][n];
     int copia[n/p][n];
@@ -166,6 +173,8 @@ int main(int argc, char **argv)
  
     timeInit = MPI_Wtime();
     //printf("tamanho=%d p=%d n=%d n/p=%d\n", tamanho,p,n,n/p);
+    for(int proc=1; proc<p; proc++)
+      MPI_Send(&n, 1, MPI_INT, proc, 0, MPI_COMM_WORLD);
     //Enviar as linhas de A para os processadores
     for(int proc=1; proc<p; proc++)
       for(int i=0, tag=0; i<tamanho; i++, tag++)
@@ -175,18 +184,18 @@ int main(int argc, char **argv)
       for(int i=0, tag=0; i<tamanho; i++, tag++)
         MPI_Send(Bt+i+proc*tamanho, n, MPI_INT, proc, tag, MPI_COMM_WORLD);
     //Ler a submatriz local do processador 0
-    for(int i=0; i<n/p; i++){
+    for(int i=0; i<tamanho; i++){
       for(int j=0; j<n; j++){
         X[i][j] = A[i][j];
       }
     }
-    for(int i=0; i<n/p; i++){
+    for(int i=0; i<tamanho; i++){
       for(int j=0; j<n; j++){
         Y[i][j] = Bt[i][j];
       }
     }
 
-    for(int i=0; i<n/p; i++){
+    for(int i=0; i<tamanho; i++){
       for(int tam=0; tam<tamanho; tam++){
         resultado = 0;
         for(int j=0; j<n; j++){
@@ -250,13 +259,13 @@ int main(int argc, char **argv)
 
     timeEnd = MPI_Wtime();
 
-    printf("%lf %lf, %d\n", timeInit, timeEnd, id);
+    //printf("%lf %lf, %d\n", timeInit, timeEnd, id);
 
 
-    /*for(int i=0; i<n; i++){
+    for(int i=0; i<n; i++){
       for(int j=0; j<n; j++)  printf("%d\t", RESPOSTA[i][j]);
       printf("\n");
-    }*/
+    }
   }
 
   MPI_Reduce(&timeInit, &totalInit, 1, MPI_DOUBLE, MPI_MIN,  0, MPI_COMM_WORLD);
@@ -264,7 +273,7 @@ int main(int argc, char **argv)
 
   time = totalEnd - totalInit;
   if (id == 0)
-  printf("REDUCE = %lf\n", time);
+  printf("%lf\n", time);
 
   MPI_Finalize();
 

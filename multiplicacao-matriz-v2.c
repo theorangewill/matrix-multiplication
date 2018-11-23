@@ -48,6 +48,7 @@ int main(int argc, char **argv)
   MPI_Comm_rank(MPI_COMM_WORLD, &id);
 
   if(id != 0){
+    MPI_Recv(&n, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     int raiz = sqrt(p);
     int tamanho = (int) n/raiz;
     int X[tamanho][tamanho];
@@ -149,11 +150,11 @@ int main(int argc, char **argv)
 
     timeEnd = MPI_Wtime();
     
-    printf("%lf %lf, %d\n", timeInit, timeEnd, id);
+    //printf("%lf %lf, %d\n", timeInit, timeEnd, id);
   }
   else{
 
-/*    FILE *file;
+    FILE *file;
     // open file
     file = fopen(argv[1], "r");
 
@@ -164,7 +165,7 @@ int main(int argc, char **argv)
 
     if(!fscanf(file, "%d\n", &n)) return 0;
 
-int A[n][n], B[n][n];
+    int A[n][n], B[n][n];
     
 
     for(int i=0; i<n; i++){
@@ -198,12 +199,11 @@ int A[n][n], B[n][n];
 */
     
   //fclose(file);
-    int A[12][12] = {{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1},{9,10,11,12,6,1,1,2,3,4,6,1},{13,14,15,16,6,1,1,2,3,4,6,1},{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1},{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1},{9,10,11,12,6,1,1,2,3,4,6,1},{13,14,15,16,6,1,1,2,3,4,6,1},{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1}};
-    int B[12][12] = {{17,18,19,20,1,3,17,18,19,20,1,3},{21,22,23,24,1,3,17,18,19,20,1,3},{25,26,27,28,1,3,17,18,19,20,1,3},{29,30,31,32,1,3,17,18,19,20,1,3},{1,2,3,4,6,1,17,18,19,20,1,3},{5,6,7,8,6,1,17,18,19,20,1,3},{17,18,19,20,1,3,17,18,19,20,1,3},{21,22,23,24,1,3,17,18,19,20,1,3},{25,26,27,28,1,3,17,18,19,20,1,3},{29,30,31,32,1,3,17,18,19,20,1,3},{1,2,3,4,6,1,17,18,19,20,1,3},{5,6,7,8,6,1,17,18,19,20,1,3}};
+  //  int A[12][12] = {{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1},{9,10,11,12,6,1,1,2,3,4,6,1},{13,14,15,16,6,1,1,2,3,4,6,1},{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1},{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1},{9,10,11,12,6,1,1,2,3,4,6,1},{13,14,15,16,6,1,1,2,3,4,6,1},{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1}};
+  //  int B[12][12] = {{17,18,19,20,1,3,17,18,19,20,1,3},{21,22,23,24,1,3,17,18,19,20,1,3},{25,26,27,28,1,3,17,18,19,20,1,3},{29,30,31,32,1,3,17,18,19,20,1,3},{1,2,3,4,6,1,17,18,19,20,1,3},{5,6,7,8,6,1,17,18,19,20,1,3},{17,18,19,20,1,3,17,18,19,20,1,3},{21,22,23,24,1,3,17,18,19,20,1,3},{25,26,27,28,1,3,17,18,19,20,1,3},{29,30,31,32,1,3,17,18,19,20,1,3},{1,2,3,4,6,1,17,18,19,20,1,3},{5,6,7,8,6,1,17,18,19,20,1,3}};
 
     int raiz = (int) sqrt(p);
     int tamanho = (int) n/raiz;
-    int copia[tamanho][tamanho];
     int X[tamanho][tamanho];
     int Y[tamanho][tamanho];
     int D[tamanho][tamanho];
@@ -224,6 +224,8 @@ int A[n][n], B[n][n];
     //printf("tamanho=%d p=%d n=%d n/p=%d\n", tamanho,p,n,n/p);
 
     timeInit = MPI_Wtime();
+    for(int proc=1; proc<p; proc++)
+      MPI_Send(&n, 1, MPI_INT, proc, 0, MPI_COMM_WORLD);
     //Enviar as linhas de A para os processadores
     for(int proc=1; proc<p; proc++)
       for(int i=0, tag=0; i<tamanho; i++, tag++)
@@ -319,13 +321,13 @@ int A[n][n], B[n][n];
 
     timeEnd = MPI_Wtime();
 
-    printf("%lf %lf, %d\n", timeInit, timeEnd, id);
+    //printf("%lf %lf, %d\n", timeInit, timeEnd, id);
 
-/*
+
     for(int i=0; i<n; i++){
       for(int j=0; j<n; j++)  printf("%d\t", RESPOSTA[i][j]);
       printf("\n");
-    }*/
+    }
   }
 
   MPI_Reduce(&timeInit, &totalInit, 1, MPI_DOUBLE, MPI_MIN,  0, MPI_COMM_WORLD);
@@ -333,7 +335,7 @@ int A[n][n], B[n][n];
 
   time = totalEnd - totalInit;
   if (id == 0)
-  printf("REDUCE = %lf\n", time);
+  printf("%lf\n", time);
   MPI_Finalize();
   return 0;
 }

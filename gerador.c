@@ -4,7 +4,7 @@
 
 int main()
 {
-	int n = 4;
+	int n = 1000;
 	srand(time(NULL));
 	printf("%d\n", n);
 	for(int i=0; i<n; i++){
