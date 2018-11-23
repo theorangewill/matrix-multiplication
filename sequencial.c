@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <time.h>
+#include <mpi.h>
 
 int main(int argc, char **argv)
 {
@@ -8,8 +9,8 @@ int main(int argc, char **argv)
   //int B[12][12] = {{17,18,19,20,1,3,17,18,19,20,1,3},{21,22,23,24,1,3,17,18,19,20,1,3},{25,26,27,28,1,3,17,18,19,20,1,3},{29,30,31,32,1,3,17,18,19,20,1,3},{1,2,3,4,6,1,17,18,19,20,1,3},{5,6,7,8,6,1,17,18,19,20,1,3},{17,18,19,20,1,3,17,18,19,20,1,3},{21,22,23,24,1,3,17,18,19,20,1,3},{25,26,27,28,1,3,17,18,19,20,1,3},{29,30,31,32,1,3,17,18,19,20,1,3},{1,2,3,4,6,1,17,18,19,20,1,3},{5,6,7,8,6,1,17,18,19,20,1,3}};
   int n;
   FILE *file;
-  double timeInit; 
-  double timeEnd; 
+  double timeInit;
+  double timeEnd;
   double time;
 
   // open file
@@ -26,7 +27,7 @@ int main(int argc, char **argv)
   int A[n][n], B[n][n];
 
   for(int i=0; i<n; i++){
-  	for(int j=0; j<n; j++){  
+  	for(int j=0; j<n; j++){
         fscanf(file,"%d", &A[i][j]);
     }
       fscanf(file, "\n");
@@ -34,7 +35,7 @@ int main(int argc, char **argv)
 
 
   for(int i=0; i<n; i++){
-    for(int j=0; j<n; j++){  
+    for(int j=0; j<n; j++){
         fscanf(file,"%d", &B[i][j]);
     }
       fscanf(file, "\n");
@@ -56,8 +57,9 @@ int main(int argc, char **argv)
     }*/
 
   //timeInit = MPI_Wtime();
-  clock_t begin = clock();
+  //clock_t begin = clock();
 
+  timeInit = MPI_Wtime();
   for(int i=0; i<n; i++){
     for(int j=0; j<n; j++){
       RESPOSTA[i][j] = 0;
@@ -72,11 +74,14 @@ int main(int argc, char **argv)
 
   //timeEnd = MPI_Wtime();
 
-  clock_t end = clock();
+  timeEnd = MPI_Wtime();
+  //clock_t end = clock();
   //time = end - begin;
-  double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+
+  time = timeEnd - timeInit;
+  //double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
   //printf("%lf %lf %lf\n", time, timeInit, timeEnd);
-  printf("%lf \n", time_spent);
+  printf("%lf\n", time);
     fclose(file);
   return 0;
 }
