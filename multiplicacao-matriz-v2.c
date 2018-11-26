@@ -3,33 +3,11 @@
 #include <stdlib.h>
 #include <math.h>
 
-
-
 /*
-522 556 590 624 104 74
-890 940 990 1040 120 122
-1258 1324 1390 1456 136 170
-1626 1708 1790 1872 152 218
-522 556 590 624 104 74
-890 940 990 1040 120 122
-
-522 556 590 624 104 74
-890 940 990 1040 120 122
-1258 1324 1390 1456 136 170
-1626 1708 1790 1872 152 218
-17 21 25 29 1 5
-19 23 27 31 3 7
-
-ele altera as duas ultimas linhas da submatriz C, tem os prints entre a parte q altera a matriz
-
-pra compilar:
-mpicc -g -Wall -o programa multiplicacao-matriz-v2.c
-
-pra executar: 4 é o numero de processaores, tem q ser potencia de 4. Com 1 processador dá certo (pq nao entra no for vezes=raiz-1 etc...)
+mpicc -g -Wall -o programa multiplicacao-matriz-v2.c -lm
 mpiexec -np 4 ./programa
-
-
 */
+
 int main(int argc, char **argv)
 {
   int p = 4;
@@ -48,20 +26,34 @@ int main(int argc, char **argv)
   MPI_Comm_rank(MPI_COMM_WORLD, &id);
 
   if(id != 0){
-    MPI_Recv(&n, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    int raiz = sqrt(p);
-    int tamanho = (int) n/raiz;
-    int X[tamanho][tamanho];
-    int Y[tamanho][tamanho];
-    int D[tamanho][tamanho];
-    int temp[tamanho];
-    int copia[tamanho][tamanho];
-    int C[tamanho][n];
+    int raiz = (int) sqrt(p);
+    int tamanho;
+    int **X, **Y, **D, **C;
+    int temp;
+    int **copia;
     int resultado;
     int linha = id/raiz;
     int coluna = id%raiz;
 
-    timeInit = MPI_Wtime();
+    //Recebe o valor de N (tamanho das matrizes)
+    MPI_Recv(&n, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    tamanho = (int) n/raiz;
+
+    //Aloca a memória necessária para as matrizes
+    X = malloc(sizeof(int)*tamanho);
+    Y = malloc(sizeof(int)*tamanho);
+    copia = malloc(sizeof(int)*tamanho);
+    C = malloc(sizeof(int)*tamanho);
+    D = malloc(sizeof(int)*tamanho);
+    temp = malloc(sizeof(int)*tamanho);
+    for(int i=0 ; i<tamanho; i++){
+      X[i] = malloc(sizeof(int)*tamanho);
+      Y[i] = malloc(sizeof(int)*tamanho);
+      copia[i] = malloc(sizeof(int)*tamanho);
+      C[i] = malloc(sizeof(int)*n);
+      D[i] = malloc(sizeof(int)*tamanho);
+    }
+
     //Recebe os blocos do processador 0, com Y=B't X=A'
     for(int i=0, tag=0; i<tamanho; i++, tag++)
       MPI_Recv(&X[i], tamanho, MPI_INT, 0, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -78,6 +70,9 @@ int main(int argc, char **argv)
       }
     }
 
+
+    //Inicia o algoritmo
+    timeInit = MPI_Wtime();
     if(coluna == 0){
       for(int proc=1; proc<raiz; proc++)
       for(int i=0, tag=0; i<tamanho; i++, tag++){
@@ -144,15 +139,35 @@ int main(int argc, char **argv)
         }
       }
     }
+    timeEnd = MPI_Wtime();
+
+    //Envia para o processador 0 a resposta local
     if(coluna == 0)
       for(int i=0, tag=0; i<tamanho; i++, tag++)
         MPI_Send(&C[i], n, MPI_INT, 0, tag, MPI_COMM_WORLD);
 
-    timeEnd = MPI_Wtime();
-    
-    //printf("%lf %lf, %d\n", timeInit, timeEnd, id);
+    //Libera a memória alocada
+    for(int i=0 ; i<tamanho; i++){
+      free(X[i]);
+      free(Y[i]);
+      free(copia[i]);
+      free(C[i]);
+    }
+    free(X);
+    free(Y);
+    free(copia);
+    free(C);
   }
   else{
+    int raiz = (int) sqrt(p);
+    int tamanho;
+    int **A, **B, **Bt;
+    int **X, **Y, **D, **C;
+    int *temp;
+    int **RESPOSTA;
+    int resultado;
+    int linha = id/raiz;
+    int coluna = id%raiz;
 
     FILE *file;
     // open file
@@ -163,11 +178,32 @@ int main(int argc, char **argv)
      return 0;
     }
 
+    //Le o tamanho das amtrizes
     if(!fscanf(file, "%d\n", &n)) return 0;
+    tamanho = (int) n/raiz;
 
-    int A[n][n], B[n][n];
-    
+    //Aloca a memória necessária para as matrizes
+    RESPOSTA = malloc(sizeof(int)*n);
+    A = malloc(sizeof(int)*n);
+    B = malloc(sizeof(int)*n);
+    Bt = malloc(sizeof(int)*n);
+    for(int i=0 ; i<n ; i++){
+      RESPOSTA[i] = malloc(sizeof(int)*n);
+      A[i] = malloc(sizeof(int)*n);
+      B[i] = malloc(sizeof(int)*n);
+      Bt[i] = malloc(sizeof(int)*n);
+    }
+    X = malloc(sizeof(int)*tamanho);
+    Y = malloc(sizeof(int)*tamanho);
+    C = malloc(sizeof(int)*tamanho);
+    for(int i=0 ; i<tamanho; i++){
+      X[i] = malloc(sizeof(int)*tamanho);
+      Y[i] = malloc(sizeof(int)*tamanho);
+      D[i] = malloc(sizeof(int)*tamanho);
+      C[i] = malloc(sizeof(int)*n);
+    }
 
+    //Le as matrizes
     for(int i=0; i<n; i++){
       for(int j=0; j<n; j++){  
         fscanf(file,"%d", &A[i][j]);
@@ -182,38 +218,6 @@ int main(int argc, char **argv)
       }
       fscanf(file, "\n");
     }
-/*
-    for(int i=0; i<n; i++){
-      for(int j=0; j<n; j++){
-        printf("%d ", A[i][j]);
-      }
-	printf("\n");
-    }
-
-    for(int i=0; i<n; i++){
-      for(int j=0; j<n; j++){
-        printf("%d ", B[i][j]);
-      }
-	printf("\n");
-    }
-*/
-    
-  //fclose(file);
-  //  int A[12][12] = {{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1},{9,10,11,12,6,1,1,2,3,4,6,1},{13,14,15,16,6,1,1,2,3,4,6,1},{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1},{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1},{9,10,11,12,6,1,1,2,3,4,6,1},{13,14,15,16,6,1,1,2,3,4,6,1},{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1}};
-  //  int B[12][12] = {{17,18,19,20,1,3,17,18,19,20,1,3},{21,22,23,24,1,3,17,18,19,20,1,3},{25,26,27,28,1,3,17,18,19,20,1,3},{29,30,31,32,1,3,17,18,19,20,1,3},{1,2,3,4,6,1,17,18,19,20,1,3},{5,6,7,8,6,1,17,18,19,20,1,3},{17,18,19,20,1,3,17,18,19,20,1,3},{21,22,23,24,1,3,17,18,19,20,1,3},{25,26,27,28,1,3,17,18,19,20,1,3},{29,30,31,32,1,3,17,18,19,20,1,3},{1,2,3,4,6,1,17,18,19,20,1,3},{5,6,7,8,6,1,17,18,19,20,1,3}};
-
-    int raiz = (int) sqrt(p);
-    int tamanho = (int) n/raiz;
-    int X[tamanho][tamanho];
-    int Y[tamanho][tamanho];
-    int D[tamanho][tamanho];
-    int temp[tamanho];
-    int C[tamanho][n];
-    int RESPOSTA[n][n];
-    int Bt[n][n];
-    int resultado;
-    int linha = id/raiz;
-    int coluna = id%raiz;
 
     //Transpor a matriz para se adequar a alocacao da memoria de uma matriz e facilitar a transmissão
     for(int i=0; i<n; i++){
@@ -221,9 +225,10 @@ int main(int argc, char **argv)
         Bt[j][i] = B[i][j];
       }
     }
-    //printf("tamanho=%d p=%d n=%d n/p=%d\n", tamanho,p,n,n/p);
 
-    timeInit = MPI_Wtime();
+
+
+    //Enviar o valor de N para os processadores
     for(int proc=1; proc<p; proc++)
       MPI_Send(&n, 1, MPI_INT, proc, 0, MPI_COMM_WORLD);
     //Enviar as linhas de A para os processadores
@@ -247,6 +252,8 @@ int main(int argc, char **argv)
       }
     }
 
+    //Iniciar o algoritmo
+    timeInit = MPI_Wtime();
     for(int i=0; i<tamanho; i++){
       for(int tam=0; tam<tamanho; tam++){
         resultado = 0;
@@ -257,11 +264,12 @@ int main(int argc, char **argv)
       }
     }
 
-    for(int proc=1; proc<raiz; proc++)
-    for(int i=0, tag=0; i<tamanho; i++, tag++){
-      MPI_Recv(&temp, tamanho, MPI_INT, proc+linha*raiz, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      for(int j=0; j<tamanho; j++){
-        D[i][j] += temp[j];
+    for(int proc=1; proc<raiz; proc++){
+      for(int i=0, tag=0; i<tamanho; i++, tag++){
+        MPI_Recv(&temp, tamanho, MPI_INT, proc+linha*raiz, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        for(int j=0; j<tamanho; j++){
+          D[i][j] += temp[j];
+        }
       }
     }
 
@@ -272,70 +280,89 @@ int main(int argc, char **argv)
     }
 
     for(int vezes=raiz-1; vezes>0; vezes--){
+      for(int i=0; i<tamanho; i++){
+        for(int j=0; j<tamanho; j++){
+          D[i][j] = Y[i][j];
+        }
+      }
 
-          for(int i=0; i<tamanho; i++){
-            for(int j=0; j<tamanho; j++){
-              D[i][j] = Y[i][j];
-            }
-          }
+      for(int i=0, tag=0; i<tamanho; i++, tag++)
+        MPI_Send(&D[i], tamanho, MPI_INT, ((unsigned int) (linha+1)%raiz)*raiz+coluna, tag, MPI_COMM_WORLD);
+      for(int i=0, tag=0; i<tamanho; i++, tag++)
+        MPI_Recv(&Y[i], tamanho, MPI_INT, ((unsigned int) (linha-1)%raiz)*raiz+coluna, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-          for(int i=0, tag=0; i<tamanho; i++, tag++)
-            MPI_Send(&D[i], tamanho, MPI_INT, ((unsigned int) (linha+1)%raiz)*raiz+coluna, tag, MPI_COMM_WORLD);
-          for(int i=0, tag=0; i<tamanho; i++, tag++)
-            MPI_Recv(&Y[i], tamanho, MPI_INT, ((unsigned int) (linha-1)%raiz)*raiz+coluna, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+      for(int i=0; i<tamanho; i++){
+        for(int tam=0; tam<tamanho; tam++){
+          resultado = 0;
+          for(int j=0; j<tamanho; j++){
+            resultado +=  X[i][j]*Y[tam][j];
+          }
+          D[i][tam] = resultado;
+        }
+      }
+      for(int proc=1; proc<raiz; proc++)
+      for(int i=0, tag=0; i<tamanho; i++, tag++){
+        MPI_Recv(&temp, tamanho, MPI_INT, proc+linha*raiz, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        for(int j=0; j<tamanho; j++){
+          D[i][j] += temp[j];
+        }
+      }
 
-          for(int i=0; i<tamanho; i++){
-            for(int tam=0; tam<tamanho; tam++){
-              resultado = 0;
-              for(int j=0; j<tamanho; j++){
-                resultado +=  X[i][j]*Y[tam][j];
-              }
-              D[i][tam] = resultado;
-            }
-          }
-          for(int proc=1; proc<raiz; proc++)
-          for(int i=0, tag=0; i<tamanho; i++, tag++){
-            MPI_Recv(&temp, tamanho, MPI_INT, proc+linha*raiz, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            for(int j=0; j<tamanho; j++){
-              D[i][j] += temp[j];
-            }
-          }
-
-          for(int i=0; i<tamanho; i++){
-            for(int j=0; j<tamanho; j++){
-              C[i][((linha+vezes)%raiz)*tamanho+j] = D[i][j];
-            }
-          }
+      for(int i=0; i<tamanho; i++){
+        for(int j=0; j<tamanho; j++){
+          C[i][((linha+vezes)%raiz)*tamanho+j] = D[i][j];
+        }
+      }
     }
+    timeEnd = MPI_Wtime();
 
+    //Recebe as respostas locais
     for(int i=0; i<tamanho; i++){
       for(int j=0; j<n; j++){
         RESPOSTA[i][j] = C[i][j];
       }
     }
 
-    if(p > 1)
     for(int proc=1; proc<raiz; proc++)
       for(int i=0, tag=0; i<tamanho; i++, tag++)
         MPI_Recv(&RESPOSTA[proc*tamanho+i], n, MPI_INT, proc*raiz, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-    timeEnd = MPI_Wtime();
-
-    //printf("%lf %lf, %d\n", timeInit, timeEnd, id);
-
-
+    //Imprime na tela a resposta
     for(int i=0; i<n; i++){
       for(int j=0; j<n; j++)  printf("%d\t", RESPOSTA[i][j]);
       printf("\n");
     }
+
+    //Libera a memória alocada
+    for(int i=0 ; i<tamanho; i++){
+      free(X[i]);
+      free(Y[i]);
+      free(copia[i]);
+      free(C[i]);
+    }
+    free(X);
+    free(Y);
+    free(copia);
+    free(C);
+    for(int i=0 ; i<n ; i++){
+      free(RESPOSTA[i]);
+      free(A[i]);
+      free(B[i]);
+    }
+    free(RESPOSTA);
+    free(A);
+    free(B);
   }
 
+
+  //Calcula o tempo do algoritmo
   MPI_Reduce(&timeInit, &totalInit, 1, MPI_DOUBLE, MPI_MIN,  0, MPI_COMM_WORLD);
   MPI_Reduce(&timeEnd, &totalEnd, 1, MPI_DOUBLE, MPI_MAX,  0, MPI_COMM_WORLD);
+  if (id == 0){
+    time = totalEnd - totalInit;
+    printf("%lf\n", time);
+  }
 
-  time = totalEnd - totalInit;
-  if (id == 0)
-  printf("%lf\n", time);
   MPI_Finalize();
   return 0;
 }

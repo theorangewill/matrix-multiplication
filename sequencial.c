@@ -1,38 +1,43 @@
 #include <stdio.h>
-#include <time.h>
 #include <mpi.h>
 
 int main(int argc, char **argv)
 {
-  //int n = 12;
-  //int A[12][12] = {{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1},{9,10,11,12,6,1,1,2,3,4,6,1},{13,14,15,16,6,1,1,2,3,4,6,1},{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1},{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1},{9,10,11,12,6,1,1,2,3,4,6,1},{13,14,15,16,6,1,1,2,3,4,6,1},{1,2,3,4,6,1,1,2,3,4,6,1},{5,6,7,8,6,1,1,2,3,4,6,1}};
-  //int B[12][12] = {{17,18,19,20,1,3,17,18,19,20,1,3},{21,22,23,24,1,3,17,18,19,20,1,3},{25,26,27,28,1,3,17,18,19,20,1,3},{29,30,31,32,1,3,17,18,19,20,1,3},{1,2,3,4,6,1,17,18,19,20,1,3},{5,6,7,8,6,1,17,18,19,20,1,3},{17,18,19,20,1,3,17,18,19,20,1,3},{21,22,23,24,1,3,17,18,19,20,1,3},{25,26,27,28,1,3,17,18,19,20,1,3},{29,30,31,32,1,3,17,18,19,20,1,3},{1,2,3,4,6,1,17,18,19,20,1,3},{5,6,7,8,6,1,17,18,19,20,1,3}};
   int n;
   FILE *file;
   double timeInit;
   double timeEnd;
   double time;
+  int **RESPOSTA;
+  int **A, **B;
 
-  // open file
+  // Abre arquivo
   file = fopen(argv[1], "r");
-
   if(!file) {
 	 printf("ERROR! Couldn't open file.\n");
 	 return 0;
   }
+
+  //Le o tamanho das matrizes
   if(!fscanf(file, "%d\n", &n)) return 0;
 
+  //Aloca memória para as matrizes
+  RESPOSTA = malloc(sizeof(int)*n);
+  A = malloc(sizeof(int)*n);
+  B = malloc(sizeof(int)*n);
+  for(int i=0 ; i<n ; i++){
+    RESPOSTA[i] = malloc(sizeof(int)*n);
+    A[i] = malloc(sizeof(int)*n);
+    B[i] = malloc(sizeof(int)*n);
+  }
 
-  int RESPOSTA[n][n];
-  int A[n][n], B[n][n];
-
+  //Leitura das matrizes
   for(int i=0; i<n; i++){
   	for(int j=0; j<n; j++){
         fscanf(file,"%d", &A[i][j]);
     }
       fscanf(file, "\n");
   }
-
 
   for(int i=0; i<n; i++){
     for(int j=0; j<n; j++){
@@ -41,24 +46,10 @@ int main(int argc, char **argv)
       fscanf(file, "\n");
   }
 
+  fclose(file);
 
-    /*for(int i=0; i<n; i++){
-      for(int j=0; j<n; j++){
-        printf("%d ", A[i][j]);
-      }
-	printf("\n");
-    }
 
-    for(int i=0; i<n; i++){
-      for(int j=0; j<n; j++){
-        printf("%d ", B[i][j]);
-      }
-	printf("\n");
-    }*/
-
-  //timeInit = MPI_Wtime();
-  //clock_t begin = clock();
-
+  //Inicia o algoritmo sequencial
   timeInit = MPI_Wtime();
   for(int i=0; i<n; i++){
     for(int j=0; j<n; j++){
@@ -66,22 +57,26 @@ int main(int argc, char **argv)
       for(int k=0; k<n; k++) RESPOSTA[i][j] += A[i][k]*B[k][j];
     }
   }
+  timeEnd = MPI_Wtime();
 
+  //Imprime na tela a resposta
   for(int i=0; i<n; i++){
     for(int j=0; j<n; j++)  printf("%d\t", RESPOSTA[i][j]);
     printf("\n");
   }
 
-  //timeEnd = MPI_Wtime();
-
-  timeEnd = MPI_Wtime();
-  //clock_t end = clock();
-  //time = end - begin;
-
+  //Calcula o tempo de execução
   time = timeEnd - timeInit;
-  //double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-  //printf("%lf %lf %lf\n", time, timeInit, timeEnd);
   printf("%lf\n", time);
-    fclose(file);
+  //Libera a memória alocada
+  for(int i=0 ; i<n ; i++){
+    free(RESPOSTA[i]);
+    free(A[i]);
+    free(B[i]);
+  }
+  free(RESPOSTA);
+  free(A);
+  free(B);
+  
   return 0;
 }
