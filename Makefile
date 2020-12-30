@@ -1,17 +1,14 @@
 compile = mpicc
 cflags =  -Wall
 
+sequential: sequential.c
+	$(compile) $(cflags) sequential.c -o sequential
 
-sequencial:
-	$(compile) $(cflags) sequencial.c -o sequencial
+version1: parallel-v1.c
+	$(compile) $(cflags) parallel-v1.c -o version1
 
-versao1:
-	$(compile) $(cflags) multiplicacao-matriz-v1.c -o versao1
-
-versao2:
-	$(compile) $(cflags) multiplicacao-matriz-v2.c -lm -o versao2
+version2: parallel-v2.c
+	$(compile) $(cflags) parallel-v2.c -lm -o version2
 
 clean:
-	rm sequencial
-	rm versao1
-	rm versao2
+	rm sequential version1 version2
